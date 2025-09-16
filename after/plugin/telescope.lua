@@ -33,14 +33,27 @@ vim.keymap.set('n', '<leader>fF', function()
   require('telescope.builtin').find_files { hidden = true, no_ignore = true }
 end, { desc = '[S]earch [R]esume' })
 
-vim.keymap.set('n', '<leader>fg', require('telescope.builtin').live_grep, { desc = 'Find by [G]rep' })
+vim.keymap.set('n', '<leader>fg', function()
+  require('telescope.builtin').live_grep()
+end, { desc = 'Find by [G]rep' })
+
+-- Live_grep with hidden + no-ignore
 vim.keymap.set('n', '<leader>fG', function()
   require('telescope.builtin').live_grep {
-    additional_args = function(args)
-      return vim.list_extend(args, { '--hidden', '--no-ignore' })
+    additional_args = function(_)
+      return { '--hidden', '--no-ignore' }
     end,
   }
 end, { desc = 'Find by [G]rep In all Files' })
+
+-- vim.keymap.set('n', '<leader>fg', require('telescope.builtin').live_grep, { desc = 'Find by [G]rep' })
+-- vim.keymap.set('n', '<leader>fG', function()
+--   require('telescope.builtin').live_grep {
+--     additional_args = function(args)
+--       return vim.list_extend(args, { '--hidden', '--no-ignore' })
+--     end,
+--   }
+-- end, { desc = 'Find by [G]rep In all Files' })
 
 -- Replace in the Quickfix list
 function QuickfixReplace(search, replace)

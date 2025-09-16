@@ -5,7 +5,7 @@ if not jdtls_ok then
 end
 
 -- Path setup
-local jdtls_path = vim.fn.stdpath('data') .. '/mason/packages/jdtls'
+local jdtls_path = vim.fn.stdpath 'data' .. '/mason/packages/jdtls'
 local path_to_lsp_server = jdtls_path .. '/config_mac'
 local path_to_plugins = jdtls_path .. '/plugins/'
 local path_to_jar = vim.fn.glob(path_to_plugins .. 'org.eclipse.equinox.launcher_*.jar')
@@ -15,11 +15,11 @@ local lombok_path = vim.fn.glob(path_to_plugins .. 'lombok.jar')
 -- print("JDTLS Path: " .. jdtls_path)
 -- print("LSP Server Path: " .. path_to_lsp_server)
 -- print("JAR Path: " .. path_to_jar)
--- print("Lombok Path: " .. lombok_path)
 
 -- Check if paths exist
-if vim.fn.executable(vim.fn.glob('/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home/bin/java')) == 0 then
-  vim.notify('Java 17 not found at expected path', vim.log.levels.ERROR)
+if vim.fn.executable(vim.fn.glob '/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home/bin/java') == 0 then
+  print('Lombok Path: ' .. lombok_path)
+  vim.notify('Java not found at expected path', vim.log.levels.ERROR)
   return
 end
 
@@ -31,21 +31,13 @@ end
 -- Java home directories
 local java_17_home = '/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home'
 
--- Root directory detection
-local root_dir = require('jdtls.setup').find_root({'.git', 'mvnw', 'gradlew', 'pom.xml', 'build.gradle'})
-if root_dir == '' then 
-  print("No root directory found")
-  return 
-end
+local jdtls = require 'jdtls'
 
--- print("Root directory: " .. root_dir)
-
--- Workspace setup
-local project_name = vim.fn.fnamemodify(root_dir, ':p:h:t')
-local workspace_dir = vim.fn.stdpath('data') .. '/site/java/workspace-root/' .. project_name
-vim.fn.mkdir(workspace_dir, 'p')
-
--- print("Workspace directory: " .. workspace_dir)
+-- 🔥 Setup extended client capabilities
+local extendedClientCapabilities = jdtls.extendedClientCapabilities
+extendedClientCapabilities.resolveAdditionalTextEditsSupport = true
+extendedClientCapabilities.progressReportProvider = true
+extendedClientCapabilities.classFileContentsSupport = true
 
 -- Main Config
 local config = {
@@ -55,15 +47,20 @@ local config = {
     '-Dosgi.bundles.defaultStartLevel=4',
     '-Declipse.product=org.eclipse.jdt.ls.core.product',
     '-Dlog.protocol=true',
-    '-Dlog.level=ALL',  -- Changed back to ALL for debugging
+    '-Dlog.level=ALL',
     '-Xms1g',
     '--add-modules=ALL-SYSTEM',
-    '--add-opens', 'java.base/java.util=ALL-UNNAMED',
-    '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+    '--add-opens',
+    'java.base/java.util=ALL-UNNAMED',
+    '--add-opens',
+    'java.base/java.lang=ALL-UNNAMED',
     '-javaagent:' .. lombok_path,
-    '-jar', path_to_jar,
-    '-configuration', path_to_lsp_server,
-    '-data', workspace_dir,
+    '-jar',
+    path_to_jar,
+    '-configuration',
+    path_to_lsp_server,
+    '-data',
+    workspace_dir,
   },
 
   root_dir = root_dir,
@@ -78,9 +75,9 @@ local config = {
       configuration = {
         updateBuildConfiguration = 'interactive',
         runtimes = {
-          { name = 'JavaSE-17', path = java_17_home, default = true }
-        }
-      }
+          { name = 'JavaSE-17', path = java_17_home, default = true },
+        },
+      },
     },
     signatureHelp = { enabled = true },
     completion = {
@@ -92,12 +89,17 @@ local config = {
         'java.util.Objects.requireNonNull',
         'java.util.Objects.requireNonNullElse',
         'org.mockito.Mockito.*',
-      }
-    }
+      },
+    },
   },
 
   flags = { allow_incremental_sync = true },
-  init_options = { bundles = {} }
+
+  init_options = {
+    bundles = {},
+    -- 🔥 Attach extended client capabilities
+    extendedClientCapabilities = extendedClientCapabilities,
+  },
 }
 
 -- Keymaps setup
@@ -105,11 +107,10 @@ config.on_attach = function(_, bufnr)
   vim.notify('JDTLS attached to buffer ' .. bufnr, vim.log.levels.INFO)
   vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { buffer = bufnr })
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { buffer = bufnr })
+
+  -- 🔥 Add common Java commands
+  jdtls.setup_dap { hotcodereplace = 'auto' }
+  jdtls.setup.add_commands()
 end
 
--- Debug: Print config command
--- print("JDTLS Command: " .. table.concat(config.cmd, ' '))
---
--- -- Start JDTLS
--- print("Starting JDTLS...")
 jdtls.start_or_attach(config)

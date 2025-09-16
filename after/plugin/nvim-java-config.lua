@@ -2,6 +2,18 @@ local java_21_home_dir = '/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents
 local java_17_home_dir = '/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home'
 local java_11_home_dir = '/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home'
 
+local jdtls_path = vim.fn.stdpath 'data' .. '/mason/packages/jdtls'
+local path_to_lsp_server = jdtls_path .. '/config_mac'
+local path_to_plugins = jdtls_path .. '/plugins/'
+local path_to_jar = vim.fn.glob(path_to_plugins .. 'org.eclipse.equinox.launcher_*.jar')
+local lombok_path = vim.fn.glob(path_to_plugins .. 'lombok.jar')
+
+-- Check if lombok.jar exists, if not provide fallback path
+if lombok_path == '' then
+  lombok_path = jdtls_path .. '/lombok.jar'
+  print('Lombok jar not found in plugins, using: ' .. lombok_path)
+end
+
 local function on_attach(client, bufnr)
   local opts = { buffer = bufnr, remap = false }
 
@@ -33,7 +45,31 @@ capabilities.textDocument.foldingRange = {
   lineFoldingOnly = true,
 }
 
+-- JDTLS command with Lombok support
+local jdtls_cmd = {
+  java_21_home_dir .. '/bin/java',
+  '-Declipse.application=org.eclipse.jdt.ls.core.id1',
+  '-Dosgi.bundles.defaultStartLevel=4',
+  '-Declipse.product=org.eclipse.jdt.ls.core.product',
+  '-Dlog.protocol=true',
+  '-Dlog.level=ALL',
+  '-Xms1g',
+  '--add-modules=ALL-SYSTEM',
+  '--add-opens',
+  'java.base/java.util=ALL-UNNAMED',
+  '--add-opens',
+  'java.base/java.lang=ALL-UNNAMED',
+  '-javaagent:' .. lombok_path, -- Add Lombok as javaagent
+  '-jar',
+  path_to_jar,
+  '-configuration',
+  path_to_lsp_server,
+  '-data',
+  vim.fn.expand '~/.cache/jdtls-workspace' .. vim.fn.getcwd(),
+}
+
 require('lspconfig').jdtls.setup {
+  cmd = jdtls_cmd, -- Use the custom command with Lombok
   on_attach = on_attach,
   capabilities = capabilities,
   settings = {
@@ -41,13 +77,16 @@ require('lspconfig').jdtls.setup {
       configuration = {
         runtimes = {
           {
-            name = 'JavaSE-17',
-            path = java_17_home_dir .. '/bin/java',
+            name = 'JavaSE',
+            path = java_21_home_dir .. '/bin/java',
             default = true,
           },
         },
       },
     },
+  },
+  init_options = {
+    bundles = {},
   },
 }
 
