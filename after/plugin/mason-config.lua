@@ -1,0 +1,159 @@
+require("mason").setup()
+
+local capabilities = {
+	textDocument = {
+		foldingRange = {
+			dynamicRegistration = false,
+			lineFoldingOnly = true,
+		},
+	},
+}
+
+capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
+
+local function on_attach(bufnr)
+	-- 'opts' table to avoid repetition for buffer and remap settings
+	local opts = { buffer = bufnr, remap = false }
+
+	-- Require Telescope for LSP-related functions
+	local tele = require("telescope.builtin")
+
+	-- Set up keymaps with clear descriptions
+	vim.keymap.set(
+		"n",
+		"gD",
+		vim.lsp.buf.declaration,
+		{ desc = "Lsp: Goto Declaration", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set("n", "K", "<cmd>lua vim.lsp.buf.hover()<cr>", opts)
+	-- vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Lsp: Hover Documentation', buffer = bufnr, remap = false })
+	vim.keymap.set(
+		"n",
+		"<leader>vws",
+		vim.lsp.buf.workspace_symbol,
+		{ desc = "Lsp: Workspace Symbols", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>vd",
+		vim.diagnostic.open_float,
+		{ desc = "Lsp: View Line Diagnostic", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"[d",
+		vim.diagnostic.goto_next,
+		{ desc = "Lsp: Next Diagnostic", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"]d",
+		vim.diagnostic.goto_prev,
+		{ desc = "Lsp: Previous Diagnostic", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>dd",
+		vim.diagnostic.setloclist,
+		{ desc = "Lsp: List Diagnostics", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>do",
+		vim.diagnostic.open_float,
+		{ desc = "Lsp: Open Diagnostic Float", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>ca",
+		vim.lsp.buf.code_action,
+		{ desc = "Lsp: Code Action", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set("n", "gd", tele.lsp_definitions, { desc = "Lsp: Goto Definition", buffer = bufnr, remap = false })
+	vim.keymap.set("n", "gr", tele.lsp_references, { desc = "Lsp: Goto References", buffer = bufnr, remap = false })
+	vim.keymap.set(
+		"n",
+		"<leader>rn",
+		vim.lsp.buf.rename,
+		{ desc = "Lsp: Rename Symbol", buffer = bufnr, remap = false }
+	)
+
+	vim.keymap.set("n", "<leader>lf", function()
+		require("conform").format({ bufnr = bufnr })
+	end, { buffer = bufnr, desc = "Lsp: Format Buffer" })
+
+	vim.keymap.set(
+		"n",
+		"<leader>wa",
+		vim.lsp.buf.add_workspace_folder,
+		{ desc = "Lsp: Add Workspace Folder", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>wr",
+		vim.lsp.buf.remove_workspace_folder,
+		{ desc = "Lsp: Remove Workspace Folder", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set("n", "<leader>wl", function()
+		print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+	end, { desc = "Lsp: List Workspace Folders", buffer = bufnr, remap = false })
+
+	local tele = require("telescope.builtin")
+
+	vim.keymap.set(
+		"n",
+		"<leader>fs",
+		tele.lsp_document_symbols,
+		{ desc = "Lsp: Document Symbols (Current File)", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>fS",
+		tele.lsp_dynamic_workspace_symbols,
+		{ desc = "Lsp: Workspace Symbols (Dynamic)", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>ft",
+		tele.lsp_type_definitions,
+		{ desc = "Lsp: Goio Type Definition", buffer = bufnr, remap = false }
+	)
+	vim.keymap.set(
+		"n",
+		"<leader>fi",
+		tele.lsp_implementations,
+		{ desc = "Lsp: Goto Implementations", buffer = bufnr, remap = false }
+	)
+end
+
+-- Configure lspconfig handlers
+require("mason-lspconfig").setup({
+	-- Default handler
+	function(server_name)
+		require("lspconfig")[server_name].setup({
+			capabilities = capabilities,
+		})
+	end,
+
+	-- ESLint-specific handler to skip if Node version is too old
+	["eslint"] = function()
+		local node_version = vim.fn.system("node --version"):match("v(%d+)")
+		if tonumber(node_version) >= 18 then
+			require("lspconfig").eslint.setup({
+				capabilities = capabilities,
+			})
+		else
+			vim.notify(
+				"ESLint LSP disabled: Node.js 18+ required (current: v" .. node_version .. ")",
+				vim.log.levels.WARN
+			)
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd("LspAttach", {
+	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
+	callback = function(ev)
+		on_attach(ev.buf)
+	end,
+})
