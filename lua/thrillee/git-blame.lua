@@ -1,5 +1,6 @@
 local M = {}
 local api = vim.api
+local ns = api.nvim_create_namespace 'GitLens' -- single source of truth
 
 function M.blameVirtText()
   local ft = vim.fn.expand '%:h:t'
@@ -7,7 +8,7 @@ function M.blameVirtText()
     return
   end
 
-  api.nvim_buf_clear_namespace(0, 2, 0, -1)
+  api.nvim_buf_clear_namespace(0, ns, 0, -1) -- use ns, not hardcoded 2
 
   local currFile = vim.fn.expand '%'
   local line = api.nvim_win_get_cursor(0)
@@ -18,7 +19,7 @@ function M.blameVirtText()
   if hash == '00000000' then
     text = 'Not Committed Yet'
   else
-    local cmd = string.format("git show %s --format='%%an | %%ar | %%s'", hash)
+    local cmd = string.format("git show %s --no-patch --format='%%an | %%ar | %%s'", hash)
     text = vim.fn.system(cmd)
     text = vim.split(text, '\n')[1]
     if text:find 'fatal' then
@@ -26,15 +27,14 @@ function M.blameVirtText()
     end
   end
 
-  -- nvim_buf_set_virtual_text is deprecated; use nvim_buf_set_extmark
-  api.nvim_buf_set_extmark(0, api.nvim_create_namespace 'GitLens', line[1] - 1, 0, {
+  api.nvim_buf_set_extmark(0, ns, line[1] - 1, 0, { -- same ns
     virt_text = { { text, 'GitLens' } },
     virt_text_pos = 'eol',
   })
 end
 
 function M.clearBlameVirtText()
-  api.nvim_buf_clear_namespace(0, api.nvim_create_namespace 'GitLens', 0, -1)
+  api.nvim_buf_clear_namespace(0, ns, 0, -1) -- same ns
 end
 
 return M
