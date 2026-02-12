@@ -1,6 +1,7 @@
 local M = {}
 local api = vim.api
-local ns = api.nvim_create_namespace 'GitLens' -- single source of truth
+local ns = api.nvim_create_namespace 'GitLens'
+local current_line = nil -- track the line we've already blamed
 
 function M.blameVirtText()
   local ft = vim.fn.expand '%:h:t'
@@ -8,11 +9,18 @@ function M.blameVirtText()
     return
   end
 
-  api.nvim_buf_clear_namespace(0, ns, 0, -1) -- use ns, not hardcoded 2
+  local line = api.nvim_win_get_cursor(0)[1]
+
+  -- already showing blame for this line, do nothing
+  if line == current_line then
+    return
+  end
+
+  api.nvim_buf_clear_namespace(0, ns, 0, -1)
+  current_line = line
 
   local currFile = vim.fn.expand '%'
-  local line = api.nvim_win_get_cursor(0)
-  local blame = vim.fn.system(string.format('git blame -c -L %d,%d %s', line[1], line[1], currFile))
+  local blame = vim.fn.system(string.format('git blame -c -L %d,%d %s', line, line, currFile))
   local hash = vim.split(blame, '%s')[1]
   local text
 
@@ -27,14 +35,20 @@ function M.blameVirtText()
     end
   end
 
-  api.nvim_buf_set_extmark(0, ns, line[1] - 1, 0, { -- same ns
+  api.nvim_buf_set_extmark(0, ns, line - 1, 0, {
     virt_text = { { text, 'GitLens' } },
     virt_text_pos = 'eol',
   })
 end
 
 function M.clearBlameVirtText()
-  api.nvim_buf_clear_namespace(0, ns, 0, -1) -- same ns
+  local line = api.nvim_win_get_cursor(0)[1]
+
+  -- only clear when we move to a different line
+  if line ~= current_line then
+    api.nvim_buf_clear_namespace(0, ns, 0, -1)
+    current_line = nil
+  end
 end
 
 return M
