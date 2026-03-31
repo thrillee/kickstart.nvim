@@ -35,3 +35,9 @@ vim.api.nvim_set_keymap('n', '<leader>cj', '<cmd>cnext<cr>', { noremap = true, s
 vim.api.nvim_set_keymap('n', '<leader>ck', '<cmd>cprev<cr>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>cq', '<cmd>cclose<cr>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>co', '<cmd>copen<cr>', { noremap = true, silent = true })
+
+vim.keymap.set('n', '<leader>v', '"+p', { desc = 'Paste from system clipboard (Normal mode)' })
+vim.keymap.set('n', '<D-v>', '"+p', { desc = 'Paste from system clipboard (Normal mode)' })
+vim.keymap.set('i', '<D-v>', '<Esc>"+pa', { desc = 'Paste from system clipboard (Insert mode)' })
+vim.keymap.set('c', '<D-v>', '<C-r>"+', { desc = 'Paste from system clipboard (Command-line mode)' })
+vim.keymap.set('v', '<D-v>', '"+p', { desc = 'Paste from system clipboard (Visual mode)' })
