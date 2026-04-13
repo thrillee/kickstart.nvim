@@ -15,7 +15,11 @@ return {
             include_current_win = false,
             autoselect_one = true,
             bo = {
-              filetype = { 'neo-tree', 'neo-tree-popup', 'notify' },
+              filetype = {
+                'neo-tree',
+                'neo-tree-popup',
+                'notify',
+              },
               buftype = { 'terminal', 'quickfix' },
             },
           },
@@ -61,12 +65,12 @@ return {
       child_or_open = function(state)
         local node = state.tree:get_node()
         if node.type == 'directory' or node:has_children() then
-          if not node:is_expanded() then -- if unexpanded, expand
+          if not node:is_expanded() then
             state.commands.toggle_node(state)
-          else -- if expanded and has children, seleect the next child
+          else
             require('neo-tree.ui.renderer').focus_node(state, node:get_child_ids()[1])
           end
-        else -- if not a directory just open it
+        else
           state.commands.open(state)
         end
       end,
@@ -79,9 +83,18 @@ return {
         local results = {
           e = { val = modify(filename, ':e'), msg = 'Extension only' },
           f = { val = filename, msg = 'Filename' },
-          F = { val = modify(filename, ':r'), msg = 'Filename w/o extension' },
-          h = { val = modify(filepath, ':~'), msg = 'Path relative to Home' },
-          p = { val = modify(filepath, ':.'), msg = 'Path relative to CWD' },
+          F = {
+            val = modify(filename, ':r'),
+            msg = 'Filename w/o extension',
+          },
+          h = {
+            val = modify(filepath, ':~'),
+            msg = 'Path relative to Home',
+          },
+          p = {
+            val = modify(filepath, ':.'),
+            msg = 'Path relative to CWD',
+          },
           P = { val = filepath, msg = 'Absolute path' },
         }
 
@@ -105,15 +118,39 @@ return {
           vim.fn.setreg('+', result.val)
         end
       end,
+      system_open = function(state)
+        local node = state.tree:get_node()
+        local path = node:get_id()
+        vim.ui.open(path)
+      end,
+      reveal_in_finder = function(state)
+        local node = state.tree:get_node()
+        local path = node:get_id()
+        if vim.fn.has 'macunix' == 1 then
+          vim.fn.system { 'open', '-R', path }
+        elseif vim.fn.has 'unix' == 1 then
+          vim.fn.system {
+            'xdg-open',
+            vim.fn.fnamemodify(path, ':h'),
+          }
+        elseif vim.fn.has 'win32' == 1 then
+          vim.fn.system {
+            'explorer.exe',
+            '/select,',
+            path,
+          }
+        end
+      end,
     },
     window = {
       width = 30,
       mappings = {
-        ['<space>'] = false, -- disable space until we figure out which-key disabling
+        ['<space>'] = false,
         ['[b'] = 'prev_source',
         [']b'] = 'next_source',
         o = 'open',
-        --[[ O = "system_open", ]]
+        O = 'system_open',
+        ['<leader>r'] = 'reveal_in_finder',
         h = 'parent_or_close',
         l = 'child_or_open',
         Y = 'copy_selector',
@@ -123,9 +160,8 @@ return {
       hijack_netrw_behavior = 'open_current',
       use_libuv_file_watcher = true,
       follow_current_file = {
-        enabled = true, -- This will find and focus the file in the active buffer every time
-        --               -- the current file is changed while the tree is open.
-        leave_dirs_open = false, -- `false` closes auto expanded dirs, such as with `:Neotree reveal`
+        enabled = true,
+        leave_dirs_open = false,
       },
     },
     event_handlers = {
@@ -133,7 +169,6 @@ return {
         event = 'neo_tree_buffer_enter',
         handler = function(_)
           vim.opt_local.signcolumn = 'auto'
-          -- require("neo-tree").close_all()
         end,
       },
     },
