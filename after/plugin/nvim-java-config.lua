@@ -68,9 +68,8 @@ local jdtls_cmd = {
   vim.fn.expand '~/.cache/jdtls-workspace' .. vim.fn.getcwd(),
 }
 
-require('lspconfig').jdtls.setup {
+vim.lsp.config('jdtls', {
   cmd = jdtls_cmd, -- Use the custom command with Lombok
-  on_attach = on_attach,
   capabilities = capabilities,
   settings = {
     java = {
@@ -88,7 +87,7 @@ require('lspconfig').jdtls.setup {
   init_options = {
     bundles = {},
   },
-}
+})
 
 local function is_java_file()
   return vim.bo.filetype == 'java'

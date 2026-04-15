@@ -1,6 +1,19 @@
 -- [[ Configure Treesitter ]]
 require('telescope').setup {
   defaults = {
+    file_ignore_patterns = {
+      'node_modules/',
+      '.git/',
+      'build/',
+      'dist/',
+      'target/',
+      '.gradle/',
+      '.idea/',
+      '.vscode/',
+      '%.class',
+      '%.jar',
+      '%.lock',
+    },
     mappings = {
       i = {
         ['<C-u>'] = false,

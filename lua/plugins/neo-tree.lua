@@ -150,7 +150,7 @@ return {
         [']b'] = 'next_source',
         o = 'open',
         O = 'system_open',
-        ['<leader>r'] = 'reveal_in_finder',
+        R = 'reveal_in_finder',
         h = 'parent_or_close',
         l = 'child_or_open',
         Y = 'copy_selector',
