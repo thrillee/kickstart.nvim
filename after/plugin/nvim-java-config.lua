@@ -8,10 +8,9 @@ local path_to_plugins = jdtls_path .. '/plugins/'
 local path_to_jar = vim.fn.glob(path_to_plugins .. 'org.eclipse.equinox.launcher_*.jar')
 local lombok_path = vim.fn.glob(path_to_plugins .. 'lombok.jar')
 
--- Check if lombok.jar exists, if not provide fallback path
+-- Fallback to root-level lombok.jar (where mason places it)
 if lombok_path == '' then
   lombok_path = jdtls_path .. '/lombok.jar'
-  print('Lombok jar not found in plugins, using: ' .. lombok_path)
 end
 
 local function on_attach(client, bufnr)
@@ -70,14 +69,16 @@ local jdtls_cmd = {
 
 vim.lsp.config('jdtls', {
   cmd = jdtls_cmd, -- Use the custom command with Lombok
+  filetypes = { 'java' },
   capabilities = capabilities,
+  root_markers = { '.git', 'mvnw', 'gradlew', 'pom.xml', 'build.gradle' },
   settings = {
     java = {
       configuration = {
         runtimes = {
           {
-            name = 'JavaSE',
-            path = java_21_home_dir .. '/bin/java',
+            name = 'JavaSE-21',
+            path = java_21_home_dir,
             default = true,
           },
         },
@@ -88,6 +89,8 @@ vim.lsp.config('jdtls', {
     bundles = {},
   },
 })
+
+vim.lsp.enable 'jdtls'
 
 local function is_java_file()
   return vim.bo.filetype == 'java'
